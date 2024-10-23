@@ -21,27 +21,25 @@ const PREFIX = "!";
 const standupIntroMessage = new MessageEmbed()
   .setColor("#ff9900")
   .setTitle("Daily Standup")
-  .setURL("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
   .setDescription(
-    "This is the newly generated text channel used for daily standups! :tada:"
+    "Este é o canal de texto recém-gerado usado para reuniões diárias do time de Engenharia + SRE!"
   )
   .addFields(
     {
-      name: "Introduction",
-      value: `Hi! I'm Stan D. Upbot and I will be facilitating your daily standups from now on.\nTo view all available commands, try \`${PREFIX}help\`.`,
+      name: "Introdução",
+      value: `Oi! Eu sou um BOT desenvolvido pelo Time de Engenharia e facilitarei suas reuniões diárias a partir de agora.\nPara ver todos os comandos disponíveis, digite \`${PREFIX}help\`.`,
     },
     {
-      name: "How does this work?",
-      value: `Anytime before the standup time \`10:30 AM EST\`, members would private DM me with the command \`${PREFIX}show\`, I will present the standup prompt and they will type their response using the command \`${PREFIX}reply @<optional_serverId> [your-message-here]\`. I will then save their response in my *secret special chamber of data*, and during the designated standup time, I would present everyone's answer to \`#daily-standups\`.`,
+      name: "Como eu funciono?",
+      value: `Todos os dias às \`09:00 AM \` e \`14:00 PM \`, eu vou te avisar por DM caso ainda não tenha preenchido seu relatório de atividades. Em seguida, salvarei a resposta na minha *câmara especial secreta de dados* e apresentarei a resposta no canal de texto \`#engenharia\`.`,
     },
     {
-      name: "Getting started",
-      value: `*Currently*, there are no members in the standup! To add a member try \`${PREFIX}am <User>\`.`,
+      name: "Começando",
+      value: `*Atualmente*, não há membros no standup! Para adicionar um membro, tente \`${PREFIX}am <User>\`.`,
     }
   )
   .setFooter(
-    "https://github.com/navn-r/standup-bot",
-    "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+    "https://developers.totvs.com/svg/selo-totvs-2.svg"
   )
   .setTimestamp();
 
@@ -142,7 +140,6 @@ bot.on("guildDelete", (guild) => {
 
 /**
  * Cron Job: 10:30:00 AM EST - Go through each standup and output the responses to the channel
- */
 let cron = schedule.scheduleJob(
   { hour: 15, minute: 30, dayOfWeek: new schedule.Range(1, 5) },
   (time) => {
@@ -180,6 +177,83 @@ let cron = schedule.scheduleJob(
               console.log(`[${new Date()}] - ${standup._id} RESPONSES CLEARED`)
             )
             .catch((err) => console.error(err));
+        });
+      })
+      .catch((err) => console.error(err));
+  }
+);
+*/
+
+/**
+ * Cron Job: 09:00 AM GMT-3 - Verifica se os membros preencheram o report e envia DM caso não tenham feito
+ */
+let reminder9AM = schedule.scheduleJob(
+  { hour: 12, minute: 0, dayOfWeek: new schedule.Range(1, 5) }, // 09h GMT-3 é 12h UTC
+  () => {
+    console.log(`[${new Date()}] - 09:00AM Check - CRON JOB START`);
+    standupModel
+      .find()
+      .then((standups) => {
+        standups.forEach((standup) => {
+          let missingMembers = [];
+          
+          // Verifica quais membros não preencheram o report
+          standup.members.forEach((id) => {
+            if (!standup.responses.has(id)) {
+              missingMembers.push(id);
+            }
+          });
+
+          // Envia mensagem privada para membros que não fizeram o check-in
+          missingMembers.forEach((id) => {
+            bot.users.fetch(id).then((user) => {
+              user.send(
+                `Ei <@${id}>! Você está pronto para ter nossa reunião do Daily Engenharia + SRE agora?`
+              ).catch((error) => {
+                console.error(`Erro ao enviar DM para o usuário ${id}:`, error);
+              });
+            }).catch((error) => {
+              console.error(`Erro ao buscar o usuário ${id}:`, error);
+            });
+          });
+        });
+      })
+      .catch((err) => console.error(err));
+  }
+);
+
+/**
+ * Cron Job: 14:00 PM GMT-3 - Verifica novamente se os membros preencheram o report e envia DM caso não tenham feito
+ */
+let reminder2PM = schedule.scheduleJob(
+  { hour: 17, minute: 0, dayOfWeek: new schedule.Range(1, 5) }, // 14h GMT-3 é 17h UTC
+  () => {
+    console.log(`[${new Date()}] - 14:00PM Check - CRON JOB START`);
+    standupModel
+      .find()
+      .then((standups) => {
+        standups.forEach((standup) => {
+          let missingMembers = [];
+          
+          // Verifica quais membros não preencheram o report
+          standup.members.forEach((id) => {
+            if (!standup.responses.has(id)) {
+              missingMembers.push(id);
+            }
+          });
+
+          // Envia mensagem privada para membros que não fizeram o check-in
+          missingMembers.forEach((id) => {
+            bot.users.fetch(id).then((user) => {
+              user.send(
+                `Ei <@${id}>! Você está pronto para ter nossa reunião do Daily Engenharia + SRE agora?`
+              ).catch((error) => {
+                console.error(`Erro ao enviar DM para o usuário ${id}:`, error);
+              });
+            }).catch((error) => {
+              console.error(`Erro ao buscar o usuário ${id}:`, error);
+            });
+          });
         });
       })
       .catch((err) => console.error(err));
